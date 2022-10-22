@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link href='https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css' rel='stylesheet' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.1/mapbox-gl.js'></script>
+	<script src="./test.min.js"></script>
+	<style>
+		body {
+			padding: 0px;
+			margin: 0px;
+		}
+
+		#mapid {
+			height: 100vh;
+		}
+
+		.mapbox-control-time {
+			padding: 20px;
+			background-color: white;
+		}
+
+        button {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        outline: none;
+        border: 0;
+        vertical-align: middle;
+        text-decoration: none;
+        background: transparent;
+        padding: 0;
+        font-size: inherit;
+        font-family: inherit;
+        }
+
+        button.learn-more {
+        width: 10rem;
+        height: auto;
+        }
+
+        button.learn-more .circle {
+        transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+        position: relative;
+        display: block;
+        margin: 0;
+        width: 3rem;
+        height: 3rem;
+        background: #282936;
+        border-radius: 1.625rem;
+        }
+
+        button.learn-more .circle .icon {
+        transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        background: #fff;
+        }
+
+        button.learn-more .circle .icon.arrow {
+        transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+        left: 0.625rem;
+        width: 1.125rem;
+        height: 0.125rem;
+        background: none;
+        }
+
+        button.learn-more .circle .icon.arrow::before {
+        position: absolute;
+        content: "";
+        top: -0.29rem;
+        right: 0.0625rem;
+        width: 0.625rem;
+        height: 0.625rem;
+        border-top: 0.125rem solid #fff;
+        border-right: 0.125rem solid #fff;
+        transform: rotate(45deg);
+        }
+
+        button.learn-more .button-text {
+        transition: all 0.45s cubic-bezier(0.65, 0, 0.076, 1);
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 0.75rem 0;
+        margin: 0 0 0 1.85rem;
+        color: #282936;
+        font-weight: 700;
+        line-height: 1.6;
+        text-align: center;
+        text-transform: uppercase;
+        }
+
+        button:hover .circle {
+        width: 100%;
+        }
+
+        button:hover .circle .icon.arrow {
+        background: #fff;
+        transform: translate(1rem, 0);
+        }
+
+        button:hover .button-text {
+        color: #fff;
+        }
+        h1 { color: #111; font-family: 'Helvetica Neue', sans-serif; font-size: 30px; font-weight: bold; letter-spacing: -1px; line-height: 1; text-align: center; }
+  
+	</style>
+	<title>Shade Map Mapbox example</title>
+</head>
+
+<body>
+	<div id="mapid">
+		<div class="mapboxgl-control-container" style="z-index: 2000; pointer-events: auto;">
+			<div class="mapboxgl-ctrl-top-left">
+				<div class="mapbox-control-time" style="pointer-events: auto;">
+                    <button class="learn-more" id="decrement">
+                        <span class="circle" aria-hidden="true">
+                        <span class="icon arrow"></span>
+                        </span>
+                        <span class="button-text">-1 hour</span>
+                    </button>
+                    <button class="learn-more" id="increment">
+                        <span class="circle" aria-hidden="true">
+                        <span class="icon arrow"></span>
+                        </span>
+                        <span class="button-text">+1 hour</span>
+                    </button>
+                    <button class="learn-more" id="play">
+                        <span class="circle" aria-hidden="true">
+                        <span class="icon arrow"></span>
+                        </span>
+                        <span class="button-text">Play</span>
+                    </button>
+                    <button class="learn-more" id="stop">
+                        <span class="circle" aria-hidden="true">
+                        <span class="icon arrow"></span>
+                        </span>
+                        <span class="button-text">Stop</span>
+                    </button>
+					<!-- <button id="decrement">-1 hour</button>
+					<button id="increment">+1 hour</button>
+					<button id="play">Play</button>
+					<button id="stop">Stop</button> -->
+					<!-- <button>
+						<a href="https://shademap.app/about" target="_blank">Get API key</a>
+					</button> -->
+                    <h1 id="time"></h1>
+					<span id="loader" style="padding: 3px;"></span>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		/* Mapbox setup */
+		mapboxgl.accessToken = 'pk.eyJ1IjoiYWxhbnRnZW8tcHJlc2FsZXMiLCJhIjoiY2pzcTA4NjRiMTMxczQzcDFqa29maXk3bSJ9.pVYNTFKfcOXA_U_5TUwDWw';
+		const map = new mapboxgl.Map({
+			container: 'mapid',
+			style: 'mapbox://styles/mapbox/streets-v11',
+			center: [10.749090832296009, 59.928186946788855],
+			zoom: 15, // starting zoom
+            hash: true,
+            pitch: 45,
+            bearing: -17.6,
+            antialias: true
+		});
+		/* End Mapbox setup */
+
+		/* ShadeMap setup */
+		const loaderEl = document.getElementById('loader');
+		let now = new Date();
+        console.log(now.getDate(), now.getMonth(), now.getFullYear(), now.getHours(), now.getMinutes());
+        let displaytime = now.getHours() + ":" + ('0'+now.getMinutes()).slice(-2);
+        document.getElementById('time').innerHTML = displaytime
+		let shadeMap;
+		map.on('load', () => {
+			shadeMap = new ShadeMap({
+				apiKey: "eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRwcGlvdHJvd3NraUBzaGFkZW1hcC5hcHAiLCJjcmVhdGVkIjoxNjYyNDkzMDY2Nzk0LCJpYXQiOjE2NjI0OTMwNjZ9.ovCrLTYsdKFTF6TW3DuODxCaAtGQ3qhcmqj3DWcol5g",
+				date: now,
+				color: '#01112f',
+				opacity: 0.7,
+				terrainSource: {
+					maxZoom: 15,
+					tileSize: 256,
+					getSourceUrl: ({ x, y, z }) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`,
+					getElevation: ({ r, g, b, a }) => (r * 256 + g + b / 256) - 32768,
+				},
+				getFeatures: (map) => {
+					const buildingData = map.querySourceFeatures('composite', { sourceLayer: 'building' }).filter((feature) => {
+						return feature.properties && feature.properties.underground !== "true" && (feature.properties.height || feature.properties.render_height)
+					});
+					return buildingData;
+				},
+				debug: (msg) => { console.log(new Date().toISOString(), msg) }
+			}).addTo(map);
+
+			shadeMap.on('tileloaded', (loadedTiles, totalTiles) => {
+				loaderEl.innerText = `Loading: ${(loadedTiles / totalTiles * 100).toFixed(0)}%`;
+			});
+		});
+		/* End ShadeMap setup */
+
+		/* Controls setup */
+		let intervalTimer;
+
+		const increment = document.getElementById('increment');
+		const decrement = document.getElementById('decrement');
+		const play = document.getElementById('play');
+		const stop = document.getElementById('stop');
+
+		increment.addEventListener('click', () => {
+
+			now = new Date(now.getTime() + 3600000);
+			shadeMap && shadeMap.setDate(now);
+            document.getElementById('time').innerHTML = now.getHours() + ":" +('0'+now.getMinutes()).slice(-2)
+		}, false);
+
+		decrement.addEventListener('click', () => {
+			now = new Date(now.getTime() - 3600000);
+			shadeMap && shadeMap.setDate(now);
+            document.getElementById('time').innerHTML = now.getHours() + ":" +('0'+now.getMinutes()).slice(-2)
+		}, false);
+
+		play.addEventListener('click', () => {
+			intervalTimer = setInterval(() => {
+				now = new Date(now.getTime() + 60000);
+				shadeMap && shadeMap.setDate(now);
+                document.getElementById('time').innerHTML = now.getHours() + ":" +('0'+now.getMinutes()).slice(-2)
+			}, 100);
+		});
+
+		stop.addEventListener('click', () => {
+			clearInterval(intervalTimer);
+		})
+		/* End controls setup */
+
+//         map.on('load', () => {
+//     map.removeLayer('building');
+//     map.addLayer({
+//         'id': '3d-buildings',
+//         'source': 'composite',
+//         'source-layer': 'building',
+//         'type': 'fill-extrusion',
+//         'minzoom': 14,
+//         'paint': {
+//             'fill-extrusion-color': '#ddd',
+//             'fill-extrusion-height': ["number", ["get", "height"], 5],
+//             'fill-extrusion-base': ["number", ["get", "min_height"], 0],
+//             'fill-extrusion-opacity': 1
+//         }
+//     }, 'road-label');
+// });
+	</script>
+</body>
+
+</html>
